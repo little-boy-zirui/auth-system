@@ -9,19 +9,25 @@ public class Role {
     private String code;
     private String name;
     private String description;
+    private String status;
     private List<String> permissions;
+    private List<String> users;
     private Instant createdAt;
+    private Instant updatedAt;
 
     public Role() {
     }
 
-    public Role(Long id, String code, String name, String description, List<String> permissions, Instant createdAt) {
+    public Role(Long id, String code, String name, String description, String status, List<String> permissions, List<String> users, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.description = description;
+        this.status = status;
         this.permissions = permissions;
+        this.users = users;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getId() {
@@ -56,6 +62,14 @@ public class Role {
         this.description = description;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public List<String> getPermissions() {
         return permissions;
     }
@@ -64,11 +78,27 @@ public class Role {
         this.permissions = permissions;
     }
 
+    public List<String> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<String> users) {
+        this.users = users;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

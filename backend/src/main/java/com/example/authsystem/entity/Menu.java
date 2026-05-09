@@ -2,36 +2,34 @@ package com.example.authsystem.entity;
 
 import java.time.Instant;
 
-public class Permission {
+public class Menu {
 
     private Long id;
-    private String code;
     private String name;
-    private String type;
     private String path;
-    private String method;
-    private String description;
+    private String component;
     private Long parentId;
-    private Integer orderNum;
+    private String type;
+    private String perms;
     private String icon;
+    private Integer orderNum;
     private String status;
     private Instant createdAt;
     private Instant updatedAt;
 
-    public Permission() {
+    public Menu() {
     }
 
-    public Permission(Long id, String code, String name, String type, String path, String method, String description, Long parentId, Integer orderNum, String icon, String status, Instant createdAt, Instant updatedAt) {
+    public Menu(Long id, String name, String path, String component, Long parentId, String type, String perms, String icon, Integer orderNum, String status, Instant createdAt, Instant updatedAt) {
         this.id = id;
-        this.code = code;
         this.name = name;
-        this.type = type;
         this.path = path;
-        this.method = method;
-        this.description = description;
+        this.component = component;
         this.parentId = parentId;
-        this.orderNum = orderNum;
+        this.type = type;
+        this.perms = perms;
         this.icon = icon;
+        this.orderNum = orderNum;
         this.status = status;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -45,28 +43,12 @@ public class Permission {
         this.id = id;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public String getPath() {
@@ -77,20 +59,12 @@ public class Permission {
         this.path = path;
     }
 
-    public String getMethod() {
-        return method;
+    public String getComponent() {
+        return component;
     }
 
-    public void setMethod(String method) {
-        this.method = method;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setComponent(String component) {
+        this.component = component;
     }
 
     public Long getParentId() {
@@ -101,12 +75,20 @@ public class Permission {
         this.parentId = parentId;
     }
 
-    public Integer getOrderNum() {
-        return orderNum;
+    public String getType() {
+        return type;
     }
 
-    public void setOrderNum(Integer orderNum) {
-        this.orderNum = orderNum;
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getPerms() {
+        return perms;
+    }
+
+    public void setPerms(String perms) {
+        this.perms = perms;
     }
 
     public String getIcon() {
@@ -115,6 +97,14 @@ public class Permission {
 
     public void setIcon(String icon) {
         this.icon = icon;
+    }
+
+    public Integer getOrderNum() {
+        return orderNum;
+    }
+
+    public void setOrderNum(Integer orderNum) {
+        this.orderNum = orderNum;
     }
 
     public String getStatus() {

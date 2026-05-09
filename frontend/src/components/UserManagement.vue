@@ -1,31 +1,35 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
 
 const users = ref([])
+const roles = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const editingUser = ref(null)
+const roleDialogVisible = ref(false)
+const assigningUser = ref(null)
+const selectedRoles = ref([])
 
 const form = ref({
   username: '',
   password: '',
   displayName: '',
-  roles: []
+  email: '',
+  phone: '',
+  status: '1'
 })
 
-const availableRoles = [
-  { code: 'ADMIN', name: '管理员' },
-  { code: 'USER', name: '普通用户' },
-  { code: 'VIEWER', name: '访客' }
-]
-
 const columns = [
+  { key: 'id', label: 'ID' },
   { key: 'username', label: '用户名' },
   { key: 'displayName', label: '显示名称' },
+  { key: 'email', label: '邮箱' },
+  { key: 'phone', label: '手机' },
   { key: 'roles', label: '角色' },
+  { key: 'status', label: '状态' },
   { key: 'actions', label: '操作' }
 ]
 
@@ -36,7 +40,7 @@ async function loadUsers() {
   
   loading.value = true
   try {
-    const response = await fetch('/api/auth/users', {
+    const response = await fetch('/api/system/users', {
       credentials: 'include'
     })
     if (response.ok) {
@@ -49,13 +53,28 @@ async function loadUsers() {
   }
 }
 
+async function loadRoles() {
+  try {
+    const response = await fetch('/api/system/roles', {
+      credentials: 'include'
+    })
+    if (response.ok) {
+      roles.value = await response.json()
+    }
+  } catch (error) {
+    console.error('加载角色失败:', error)
+  }
+}
+
 function handleAdd() {
   editingUser.value = null
   form.value = {
     username: '',
     password: '',
     displayName: '',
-    roles: []
+    email: '',
+    phone: '',
+    status: '1'
   }
   dialogVisible.value = true
 }
@@ -65,8 +84,10 @@ function handleEdit(user) {
   form.value = {
     username: user.username,
     password: '',
-    displayName: user.displayName,
-    roles: user.roles || []
+    displayName: user.displayName || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    status: user.status || '1'
   }
   dialogVisible.value = true
 }
@@ -82,7 +103,7 @@ async function handleDelete(user) {
   }
   
   try {
-    const response = await fetch(`/api/auth/users/${user.username}`, {
+    const response = await fetch(`/api/system/users/${user.id}`, {
       method: 'DELETE',
       credentials: 'include'
     })
@@ -96,13 +117,27 @@ async function handleDelete(user) {
 
 async function handleSubmit() {
   try {
-    const method = editingUser.value ? 'PUT' : 'POST'
-    const response = await fetch('/api/auth/users', {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(form.value)
-    })
+    let response
+    if (editingUser.value) {
+      response = await fetch(`/api/system/users/${editingUser.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          displayName: form.value.displayName,
+          email: form.value.email,
+          phone: form.value.phone,
+          status: form.value.status
+        })
+      })
+    } else {
+      response = await fetch('/api/system/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(form.value)
+      })
+    }
     
     if (response.ok) {
       dialogVisible.value = false
@@ -113,8 +148,33 @@ async function handleSubmit() {
   }
 }
 
+function handleAssignRoles(user) {
+  assigningUser.value = user
+  selectedRoles.value = user.roles || []
+  roleDialogVisible.value = true
+}
+
+async function handleAssignRolesSubmit() {
+  try {
+    const response = await fetch(`/api/system/users/${assigningUser.value.id}/roles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(selectedRoles.value)
+    })
+    
+    if (response.ok) {
+      roleDialogVisible.value = false
+      await loadUsers()
+    }
+  } catch (error) {
+    console.error('分配角色失败:', error)
+  }
+}
+
 onMounted(() => {
   loadUsers()
+  loadRoles()
 })
 </script>
 
@@ -139,17 +199,26 @@ onMounted(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in users" :key="user.username">
+          <tr v-for="user in users" :key="user.id">
+            <td>{{ user.id }}</td>
             <td>{{ user.username }}</td>
-            <td>{{ user.displayName }}</td>
+            <td>{{ user.displayName || '-' }}</td>
+            <td>{{ user.email || '-' }}</td>
+            <td>{{ user.phone || '-' }}</td>
             <td>
               <span v-for="role in user.roles" :key="role" class="role-tag">
-                {{ role.replace('ROLE_', '') }}
+                {{ role }}
+              </span>
+            </td>
+            <td>
+              <span :class="['status-tag', user.status === '1' ? 'success' : 'danger']">
+                {{ user.status === '1' ? '正常' : '停用' }}
               </span>
             </td>
             <td>
               <button v-permission="'system:user:edit'" @click="handleEdit(user)" class="btn-link">编辑</button>
               <button v-permission="'system:user:delete'" @click="handleDelete(user)" class="btn-link danger">删除</button>
+              <button v-permission="'system:role:assign'" @click="handleAssignRoles(user)" class="btn-link primary">分配角色</button>
             </td>
           </tr>
         </tbody>
@@ -158,6 +227,7 @@ onMounted(() => {
       <p v-else class="no-data">暂无用户数据</p>
     </div>
     
+    <!-- 用户编辑对话框 -->
     <div v-if="dialogVisible" class="dialog-overlay" @click.self="dialogVisible = false">
       <div class="dialog">
         <div class="dialog-header">
@@ -166,14 +236,14 @@ onMounted(() => {
         </div>
         
         <div class="dialog-body">
-          <div class="form-item">
-            <label>用户名</label>
+          <div v-if="!editingUser" class="form-item">
+            <label>用户名 <span class="required">*</span></label>
             <input v-model="form.username" type="text" placeholder="请输入用户名" />
           </div>
           
-          <div class="form-item">
-            <label>密码</label>
-            <input v-model="form.password" type="password" :placeholder="editingUser ? '不修改请留空' : '请输入密码'" />
+          <div v-if="!editingUser" class="form-item">
+            <label>密码 <span class="required">*</span></label>
+            <input v-model="form.password" type="password" placeholder="请输入密码" />
           </div>
           
           <div class="form-item">
@@ -182,23 +252,58 @@ onMounted(() => {
           </div>
           
           <div class="form-item">
-            <label>角色</label>
-            <div class="checkbox-group">
-              <label v-for="role in availableRoles" :key="role.code" class="checkbox-label">
-                <input 
-                  type="checkbox" 
-                  :value="role.code" 
-                  v-model="form.roles"
-                />
-                {{ role.name }}
-              </label>
-            </div>
+            <label>邮箱</label>
+            <input v-model="form.email" type="email" placeholder="请输入邮箱" />
+          </div>
+          
+          <div class="form-item">
+            <label>手机</label>
+            <input v-model="form.phone" type="text" placeholder="请输入手机号" />
+          </div>
+          
+          <div class="form-item">
+            <label>状态</label>
+            <select v-model="form.status" class="select">
+              <option value="1">正常</option>
+              <option value="0">停用</option>
+            </select>
           </div>
         </div>
         
         <div class="dialog-footer">
           <button @click="dialogVisible = false" class="btn-default">取消</button>
           <button @click="handleSubmit" class="btn-primary">确定</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 角色分配对话框 -->
+    <div v-if="roleDialogVisible" class="dialog-overlay" @click.self="roleDialogVisible = false">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>分配角色 - {{ assigningUser?.username }}</h3>
+          <button @click="roleDialogVisible = false" class="close-btn">×</button>
+        </div>
+        
+        <div class="dialog-body">
+          <div class="checkbox-group">
+            <label v-for="role in roles" :key="role.id" class="checkbox-label">
+              <input 
+                type="checkbox" 
+                :value="role.code" 
+                v-model="selectedRoles"
+              />
+              <span class="checkbox-text">
+                <strong>{{ role.name }}</strong>
+                <small>{{ role.description || role.code }}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="dialog-footer">
+          <button @click="roleDialogVisible = false" class="btn-default">取消</button>
+          <button @click="handleAssignRolesSubmit" class="btn-primary">确定</button>
         </div>
       </div>
     </div>
@@ -284,6 +389,23 @@ td {
   margin-right: 4px;
 }
 
+.status-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.status-tag.success {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.status-tag.danger {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
 .btn-link {
   background: none;
   border: none;
@@ -300,6 +422,10 @@ td {
 
 .btn-link.danger {
   color: #ff4d4f;
+}
+
+.btn-link.primary {
+  color: #52c41a;
 }
 
 .no-data {
@@ -383,27 +509,62 @@ td {
   font-weight: 500;
 }
 
-.form-item input[type="text"],
-.form-item input[type="password"] {
+.form-item input,
+.form-item select {
   padding: 8px 12px;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   font-size: 14px;
 }
 
+.form-item .select {
+  cursor: pointer;
+}
+
+.required {
+  color: #ff4d4f;
+}
+
 .checkbox-group {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .checkbox-label {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #666;
-  font-size: 14px;
+  align-items: flex-start;
+  gap: 8px;
   cursor: pointer;
+  padding: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.checkbox-label:hover {
+  border-color: #1890ff;
+  background: #f0f5ff;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-top: 2px;
+}
+
+.checkbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkbox-text strong {
+  color: #333;
+  font-size: 14px;
+}
+
+.checkbox-text small {
+  color: #999;
+  font-size: 12px;
 }
 
 .dialog-footer {
