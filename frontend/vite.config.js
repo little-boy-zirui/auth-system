@@ -1,0 +1,23 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+  server: {
+    allowedHosts: ['.monkeycode-ai.online'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/oauth2': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/login': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
+  }
+})
