@@ -52,6 +52,12 @@ public class AuthController {
             SessionUser user = localUserDetailsService.findSessionUser(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
             httpServletRequest.getSession(true).setAttribute(SESSION_USER_KEY, user);
+            
+            // 同时更新 SecurityContext，以便 Spring Security 能够识别
+            var securityContext = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+            securityContext.setAuthentication(authentication);
+            org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
+            
             return UserResponse.from(user);
         } catch (BadCredentialsException ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");

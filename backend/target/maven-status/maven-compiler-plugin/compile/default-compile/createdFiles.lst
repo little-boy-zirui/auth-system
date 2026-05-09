@@ -22,6 +22,7 @@ com/example/authsystem/controller/RoleController.class
 com/example/authsystem/payload/LoginRequest.class
 com/example/authsystem/payload/SsoLoginRequest.class
 com/example/authsystem/aspect/PermissionAspect.class
+com/example/authsystem/config/SessionAuthenticationFilter.class
 com/example/authsystem/controller/MenuController.class
 com/example/authsystem/annotation/RequirePermission.class
 com/example/authsystem/config/AppProperties$LocalUserProperties.class

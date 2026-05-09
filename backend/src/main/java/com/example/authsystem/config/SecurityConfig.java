@@ -12,6 +12,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -42,8 +45,10 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
+            .addFilterBefore(new SessionAuthenticationFilter(), org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class)
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/error", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/sso/login", "/api/sso/validate", "/api/sso/logout").permitAll()
+                .requestMatchers("/api/system/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/oauth2/authorization/**", "/login/oauth2/code/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2Login(oauth2 -> oauth2
