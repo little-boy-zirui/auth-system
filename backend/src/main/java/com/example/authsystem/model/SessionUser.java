@@ -8,6 +8,7 @@ public record SessionUser(
     String displayName,
     String email,
     AuthProvider provider,
-    List<String> roles
+    List<String> roles,
+    List<String> permissions
 ) implements Serializable {
 }

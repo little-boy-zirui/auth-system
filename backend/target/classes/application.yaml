@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+
+spring:
+  application:
+    name: auth-system-backend
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID:replace-with-your-client-id}
+            client-secret: ${GITHUB_CLIENT_SECRET:replace-with-your-client-secret}
+            scope:
+              - read:user
+              - user:email
+
+app:
+  frontend-base-url: http://localhost:5173
+  default-redirect-uri: /
+  users:
+    - username: admin
+      password: admin123
+      display-name: 系统管理员
+      roles:
+        - ADMIN
+        - USER
+    - username: demo
+      password: demo123
+      display-name: 演示用户
+      roles:
+        - USER
+
+logging:
+  level:
+    org.springframework.security: info

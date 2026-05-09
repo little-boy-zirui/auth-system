@@ -1,0 +1,17 @@
+com/example/authsystem/service/SsoService$SsoTicket.class
+com/example/authsystem/config/AppProperties.class
+com/example/authsystem/controller/AuthController.class
+com/example/authsystem/model/SessionUser.class
+com/example/authsystem/payload/LoginRequest.class
+com/example/authsystem/service/LocalUserDetailsService.class
+com/example/authsystem/payload/SsoLoginRequest.class
+com/example/authsystem/service/SsoService.class
+com/example/authsystem/service/LocalUserDetailsService$LocalUserRecord.class
+com/example/authsystem/config/SecurityConfig$FrontendRedirectAuthenticationSuccessHandler.class
+com/example/authsystem/config/AppProperties$LocalUserProperties.class
+com/example/authsystem/config/SecurityConfig.class
+com/example/authsystem/controller/SsoController.class
+com/example/authsystem/payload/UserResponse.class
+com/example/authsystem/AuthSystemApplication.class
+com/example/authsystem/model/AuthProvider.class
+com/example/authsystem/config/AuthenticationManagerConfig.class

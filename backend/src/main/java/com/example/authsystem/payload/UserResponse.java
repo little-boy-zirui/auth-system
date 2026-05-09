@@ -10,13 +10,14 @@ public record UserResponse(
     String displayName,
     String email,
     AuthProvider provider,
-    List<String> roles
+    List<String> roles,
+    List<String> permissions
 ) {
     public static UserResponse anonymous() {
-        return new UserResponse(false, null, null, null, null, List.of());
+        return new UserResponse(false, null, null, null, null, List.of(), List.of());
     }
 
     public static UserResponse from(SessionUser user) {
-        return new UserResponse(true, user.username(), user.displayName(), user.email(), user.provider(), user.roles());
+        return new UserResponse(true, user.username(), user.displayName(), user.email(), user.provider(), user.roles(), user.permissions());
     }
 }

@@ -1,5 +1,6 @@
 package com.example.authsystem.controller;
 
+import com.example.authsystem.annotation.RequirePermission;
 import com.example.authsystem.model.AuthProvider;
 import com.example.authsystem.model.SessionUser;
 import com.example.authsystem.payload.LoginRequest;
@@ -8,6 +9,7 @@ import com.example.authsystem.service.LocalUserDetailsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,7 +21,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -83,7 +87,8 @@ public class AuthController {
                 oidcUser.getFullName(),
                 oidcUser.getEmail(),
                 AuthProvider.OAUTH2,
-                authorities(authentication));
+                authorities(authentication),
+                List.of("user:view", "user:create"));
         }
         if (principal instanceof OAuth2User oauth2User) {
             String username = oauth2User.getAttribute("login");
@@ -92,9 +97,37 @@ public class AuthController {
             }
             String displayName = oauth2User.getAttribute("name");
             String email = oauth2User.getAttribute("email");
-            return new UserResponse(true, username, displayName, email, AuthProvider.OAUTH2, authorities(authentication));
+            return new UserResponse(true, username, displayName, email, AuthProvider.OAUTH2, authorities(authentication), List.of("user:view"));
         }
         return UserResponse.anonymous();
+    }
+
+    @GetMapping("/users")
+    @RequirePermission({"user:view"})
+    public List<Map<String, String>> listUsers() {
+        return List.of(
+            Map.of("username", "admin", "role", "ADMIN"),
+            Map.of("username", "demo", "role", "USER"),
+            Map.of("username", "guest", "role", "VIEWER")
+        );
+    }
+
+    @PostMapping("/users")
+    @RequirePermission({"user:create"})
+    public Map<String, Object> createUser(@RequestBody Map<String, String> body) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("message", "User created: " + body.get("username"));
+        return result;
+    }
+
+    @DeleteMapping("/users/{username}")
+    @RequirePermission({"user:delete"})
+    public Map<String, Object> deleteUser(@PathVariable String username) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("message", "User deleted: " + username);
+        return result;
     }
 
     private List<String> authorities(Authentication authentication) {

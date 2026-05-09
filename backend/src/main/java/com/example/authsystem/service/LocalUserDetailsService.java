@@ -20,8 +20,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class LocalUserDetailsService implements UserDetailsService {
 
     private final Map<String, LocalUserRecord> users;
+    private final RbacService rbacService;
 
-    public LocalUserDetailsService(AppProperties appProperties, PasswordEncoder passwordEncoder) {
+    public LocalUserDetailsService(AppProperties appProperties, PasswordEncoder passwordEncoder, RbacService rbacService) {
+        this.rbacService = rbacService;
         this.users = new LinkedHashMap<>();
         for (AppProperties.LocalUserProperties user : appProperties.getUsers()) {
             users.put(user.getUsername(), new LocalUserRecord(
@@ -49,7 +51,8 @@ public class LocalUserDetailsService implements UserDetailsService {
         if (user == null) {
             return Optional.empty();
         }
-        return Optional.of(new SessionUser(user.username(), user.displayName(), null, AuthProvider.LOCAL, user.roles()));
+        List<String> permissions = rbacService.getPermissionsForRoles(user.roles());
+        return Optional.of(new SessionUser(user.username(), user.displayName(), null, AuthProvider.LOCAL, user.roles(), permissions));
     }
 
     private Collection<? extends GrantedAuthority> toAuthorities(List<String> roles) {
