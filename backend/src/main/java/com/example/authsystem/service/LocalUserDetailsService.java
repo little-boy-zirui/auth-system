@@ -1,6 +1,7 @@
 package com.example.authsystem.service;
 
 import com.example.authsystem.config.AppProperties;
+import com.example.authsystem.entity.Role;
 import com.example.authsystem.model.AuthProvider;
 import com.example.authsystem.model.SessionUser;
 import java.util.Collection;
@@ -51,7 +52,13 @@ public class LocalUserDetailsService implements UserDetailsService {
         if (user == null) {
             return Optional.empty();
         }
-        List<String> permissions = rbacService.getPermissionsForRoles(user.roles());
+        List<com.example.authsystem.entity.Role> roleList = user.roles().stream()
+            .map(code -> {
+                Role role = rbacService.getRoleByCode(code);
+                return role != null ? role : rbacService.createRole(code, code, "");
+            })
+            .toList();
+        List<String> permissions = rbacService.getPermissionsForRoles(roleList);
         return Optional.of(new SessionUser(user.username(), user.displayName(), null, AuthProvider.LOCAL, user.roles(), permissions));
     }
 
