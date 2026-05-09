@@ -27,7 +27,7 @@ public class PermissionAspect {
     @Around("@annotation(com.example.authsystem.annotation.RequirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint) throws Throwable {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        RequirePermission requirePermission = signature.getMethodAnnotation(RequirePermission.class);
+        RequirePermission requirePermission = (RequirePermission) signature.getMethod().getAnnotation(RequirePermission.class);
 
         String[] requiredPermissions = requirePermission.value();
         String logical = requirePermission.logical();

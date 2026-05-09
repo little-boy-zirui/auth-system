@@ -20,7 +20,8 @@ public class SsoService {
             user.displayName(),
             user.email(),
             AuthProvider.SSO,
-            user.roles()), Instant.now().plusSeconds(120)));
+            user.roles(),
+            user.permissions()), Instant.now().plusSeconds(120)));
         return ticket;
     }
 

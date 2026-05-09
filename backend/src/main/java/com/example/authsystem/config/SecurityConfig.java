@@ -1,6 +1,7 @@
 package com.example.authsystem.config;
 
 import com.example.authsystem.service.LocalUserDetailsService;
+import com.example.authsystem.service.RbacService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -61,8 +62,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public LocalUserDetailsService localUserDetailsService(AppProperties appProperties, PasswordEncoder passwordEncoder) {
-        return new LocalUserDetailsService(appProperties, passwordEncoder);
+    public LocalUserDetailsService localUserDetailsService(AppProperties appProperties, PasswordEncoder passwordEncoder, RbacService rbacService) {
+        return new LocalUserDetailsService(appProperties, passwordEncoder, rbacService);
     }
 
     @Bean
