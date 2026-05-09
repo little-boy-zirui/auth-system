@@ -6,12 +6,14 @@ const authStore = useAuthStore()
 
 const roles = ref([])
 const permissions = ref([])
+const menus = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const editingRole = ref(null)
-const permDialogVisible = false
+const permDialogVisible = ref(false)
 const assigningRole = ref(null)
 const selectedPermissions = ref([])
+const selectedMenus = ref([])
 
 const form = ref({
   code: '',
@@ -63,6 +65,19 @@ async function loadPermissions() {
   }
 }
 
+async function loadMenus() {
+  try {
+    const response = await fetch('/api/system/menus', {
+      credentials: 'include'
+    })
+    if (response.ok) {
+      menus.value = await response.json()
+    }
+  } catch (error) {
+    console.error('加载菜单失败:', error)
+  }
+}
+
 function handleAdd() {
   editingRole.value = null
   form.value = {
@@ -90,7 +105,7 @@ async function handleDelete(role) {
     return
   }
   
-  if (!authStore.hasPermission('system:role:edit')) {
+  if (!authStore.hasPermission('system:role:delete')) {
     alert('没有删除权限')
     return
   }
@@ -143,19 +158,43 @@ async function handleSubmit() {
 function handleAssignPermissions(role) {
   assigningRole.value = role
   selectedPermissions.value = role.permissions || []
+  selectedMenus.value = []
   permDialogVisible.value = true
+  loadAssignedMenus(role.id)
+}
+
+async function loadAssignedMenus(roleId) {
+  try {
+    const response = await fetch(`/api/system/roles/${roleId}/menus`, {
+      credentials: 'include'
+    })
+    if (response.ok) {
+      const data = await response.json()
+      selectedMenus.value = data.map(item => item.id)
+    }
+  } catch (error) {
+    console.error('加载角色菜单失败:', error)
+  }
 }
 
 async function handleAssignPermissionsSubmit() {
   try {
-    const response = await fetch(`/api/system/roles/${assigningRole.value.id}/permissions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(selectedPermissions.value)
-    })
-    
-    if (response.ok) {
+    const [permissionResponse, menuResponse] = await Promise.all([
+      fetch(`/api/system/roles/${assigningRole.value.id}/permissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(selectedPermissions.value)
+      }),
+      fetch(`/api/system/roles/${assigningRole.value.id}/menus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(selectedMenus.value)
+      })
+    ])
+
+    if (permissionResponse.ok && menuResponse.ok) {
       permDialogVisible.value = false
       await loadRoles()
     }
@@ -164,9 +203,25 @@ async function handleAssignPermissionsSubmit() {
   }
 }
 
+function toggleMenuSelection(menuId) {
+  if (selectedMenus.value.includes(menuId)) {
+    selectedMenus.value = selectedMenus.value.filter(id => id !== menuId)
+  } else {
+    selectedMenus.value = [...selectedMenus.value, menuId]
+  }
+}
+
+function isMenuSelected(menuId) {
+  return selectedMenus.value.includes(menuId)
+}
+
+const menuPermissions = () => permissions.value.filter(p => p.type?.toLowerCase() === 'menu')
+const actionPermissions = () => permissions.value.filter(p => p.type?.toLowerCase() !== 'menu')
+
 onMounted(() => {
   loadRoles()
   loadPermissions()
+  loadMenus()
 })
 </script>
 
@@ -174,7 +229,7 @@ onMounted(() => {
   <div class="role-management">
     <div class="page-header">
       <h2>角色管理</h2>
-      <button v-permission="'system:role:edit'" @click="handleAdd" class="btn-primary">
+      <button v-permission="'system:role:create'" @click="handleAdd" class="btn-primary">
         + 新增角色
       </button>
     </div>
@@ -212,7 +267,7 @@ onMounted(() => {
             <td>
               <button v-permission="'system:role:edit'" @click="handleEdit(role)" class="btn-link">编辑</button>
               <button v-permission="'system:role:assign'" @click="handleAssignPermissions(role)" class="btn-link primary">分配权限</button>
-              <button v-permission="'system:role:edit'" @click="handleDelete(role)" class="btn-link danger">删除</button>
+              <button v-permission="'system:role:delete'" @click="handleDelete(role)" class="btn-link danger">删除</button>
             </td>
           </tr>
         </tbody>
@@ -280,7 +335,7 @@ onMounted(() => {
             <div class="perm-category">
               <h4>菜单权限</h4>
               <div class="checkbox-group">
-                <label v-for="perm in permissions.filter(p => p.type === 'menu')" :key="perm.id" class="checkbox-label">
+                <label v-for="perm in menuPermissions()" :key="perm.id" class="checkbox-label">
                   <input 
                     type="checkbox" 
                     :value="perm.code" 
@@ -297,7 +352,7 @@ onMounted(() => {
             <div class="perm-category">
               <h4>按钮权限</h4>
               <div class="checkbox-group">
-                <label v-for="perm in permissions.filter(p => p.type === 'button')" :key="perm.id" class="checkbox-label">
+                <label v-for="perm in actionPermissions()" :key="perm.id" class="checkbox-label">
                   <input 
                     type="checkbox" 
                     :value="perm.code" 
@@ -306,6 +361,23 @@ onMounted(() => {
                   <span class="checkbox-text">
                     <strong>{{ perm.name }}</strong>
                     <small>{{ perm.code }}</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div class="perm-category">
+              <h4>菜单可见性</h4>
+              <div class="checkbox-group">
+                <label v-for="menu in menus.filter(item => item.type !== 'button')" :key="menu.id" class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    :checked="isMenuSelected(menu.id)"
+                    @change="toggleMenuSelection(menu.id)"
+                  />
+                  <span class="checkbox-text">
+                    <strong>{{ menu.name }}</strong>
+                    <small>{{ menu.path }}</small>
                   </span>
                 </label>
               </div>

@@ -61,6 +61,30 @@ export const useMenuStore = defineStore('menu', () => {
     menus.value = menuList || defaultMenus
   }
 
+  function normalizeMenu(menu) {
+    return {
+      ...menu,
+      title: menu.title || menu.name,
+      children: Array.isArray(menu.children) ? menu.children.map(normalizeMenu) : []
+    }
+  }
+
+  async function loadMenus() {
+    try {
+      const response = await fetch('/api/system/menus/tree', {
+        credentials: 'include'
+      })
+      if (!response.ok) {
+        setMenus(defaultMenus)
+        return
+      }
+      const data = await response.json()
+      setMenus(data.map(normalizeMenu))
+    } catch {
+      setMenus(defaultMenus)
+    }
+  }
+
   function setActiveMenu(path) {
     activeMenu.value = path
   }
@@ -69,6 +93,7 @@ export const useMenuStore = defineStore('menu', () => {
     menus,
     activeMenu,
     setMenus,
-    setActiveMenu
+    setActiveMenu,
+    loadMenus
   }
 })

@@ -37,7 +37,7 @@ public class PermissionController {
     }
 
     @PostMapping
-    @RequirePermission({"system:role:edit"})
+    @RequirePermission({"system:permission:create"})
     public Map<String, Object> createPermission(@RequestBody Map<String, String> body) {
         String code = body.get("code");
         String name = body.get("name");
@@ -55,7 +55,7 @@ public class PermissionController {
     }
 
     @PutMapping("/{id}")
-    @RequirePermission({"system:role:edit"})
+    @RequirePermission({"system:permission:edit"})
     public Map<String, Object> updatePermission(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Permission permission = rbacService.getPermissionById(id);
         if (permission == null) {
@@ -74,7 +74,7 @@ public class PermissionController {
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission({"system:role:edit"})
+    @RequirePermission({"system:permission:delete"})
     public Map<String, Object> deletePermission(@PathVariable Long id) {
         Permission permission = rbacService.getPermissionById(id);
         if (permission == null) {

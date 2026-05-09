@@ -11,12 +11,14 @@ const editingMenu = ref(null)
 
 const form = ref({
   name: '',
-  code: '',
-  type: 'MENU',
-  parentId: null,
   path: '',
+  component: '',
+  type: 'menu',
+  parentId: 0,
+  perms: '',
+  status: '1',
   icon: '',
-  sortOrder: 0
+  orderNum: 1
 })
 
 const menuOptions = ref([])
@@ -29,7 +31,7 @@ async function loadMenus() {
     })
     if (response.ok) {
       menus.value = await response.json()
-      menuOptions.value = [{ id: null, name: '顶级菜单', children: [] }, ...menus.value]
+      menuOptions.value = menus.value.filter(menu => menu.type === 'directory')
     }
   } catch (error) {
     console.error('加载菜单失败:', error)
@@ -42,19 +44,31 @@ function handleAdd() {
   editingMenu.value = null
   form.value = {
     name: '',
-    code: '',
-    type: 'MENU',
-    parentId: null,
     path: '',
+    component: '',
+    type: 'menu',
+    parentId: 0,
+    perms: '',
+    status: '1',
     icon: '',
-    sortOrder: 0
+    orderNum: 1
   }
   showModal.value = true
 }
 
 function handleEdit(menu) {
   editingMenu.value = menu
-  form.value = { ...menu }
+  form.value = {
+    name: menu.name || '',
+    path: menu.path || '',
+    component: menu.component || '',
+    type: menu.type || 'menu',
+    parentId: menu.parentId ?? 0,
+    perms: menu.perms || '',
+    icon: menu.icon || '',
+    orderNum: menu.orderNum ?? 1,
+    status: menu.status || '1'
+  }
   showModal.value = true
 }
 
@@ -106,14 +120,15 @@ async function handleDelete(menu) {
 
 function getTypeLabel(type) {
   const labels = {
-    MENU: '菜单',
-    BUTTON: '按钮'
+    directory: '目录',
+    menu: '菜单',
+    button: '按钮'
   }
   return labels[type] || type
 }
 
 function getParentName(parentId) {
-  if (!parentId) return '-'
+  if (!parentId) return '顶级菜单'
   const parent = menus.value.find(m => m.id === parentId)
   return parent ? parent.name : '-'
 }
@@ -127,7 +142,7 @@ onMounted(() => {
   <div class="management-page">
     <div class="page-header">
       <h2>菜单管理</h2>
-      <button class="btn-primary" @click="handleAdd">新增菜单</button>
+      <button v-permission="'system:menu:create'" class="btn-primary" @click="handleAdd">新增菜单</button>
     </div>
     
     <div class="table-container">
@@ -135,19 +150,19 @@ onMounted(() => {
         <thead>
           <tr>
             <th>名称</th>
-            <th>编码</th>
             <th>类型</th>
             <th>父级菜单</th>
             <th>路径</th>
+            <th>权限标识</th>
             <th>图标</th>
             <th>排序</th>
+            <th>状态</th>
             <th>操作</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="menu in menus" :key="menu.id">
             <td>{{ menu.name }}</td>
-            <td><code>{{ menu.code }}</code></td>
             <td>
               <span class="type-tag" :class="menu.type.toLowerCase()">
                 {{ getTypeLabel(menu.type) }}
@@ -155,11 +170,13 @@ onMounted(() => {
             </td>
             <td>{{ getParentName(menu.parentId) }}</td>
             <td><code>{{ menu.path || '-' }}</code></td>
+            <td><code>{{ menu.perms || '-' }}</code></td>
             <td>{{ menu.icon || '-' }}</td>
-            <td>{{ menu.sortOrder }}</td>
+            <td>{{ menu.orderNum }}</td>
+            <td>{{ menu.status === '1' ? '正常' : '停用' }}</td>
             <td class="actions">
-              <button class="btn-text" @click="handleEdit(menu)">编辑</button>
-              <button class="btn-text btn-danger" @click="handleDelete(menu)">删除</button>
+              <button v-permission="'system:menu:edit'" class="btn-text" @click="handleEdit(menu)">编辑</button>
+              <button v-permission="'system:menu:delete'" class="btn-text btn-danger" @click="handleDelete(menu)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -183,49 +200,63 @@ onMounted(() => {
             <label>菜单名称 *</label>
             <input v-model="form.name" type="text" placeholder="请输入菜单名称" />
           </div>
-          
-          <div class="form-item">
-            <label>菜单编码 *</label>
-            <input v-model="form.code" type="text" placeholder="请输入菜单编码（如：system:user）" />
-          </div>
-          
+
           <div class="form-item">
             <label>菜单类型 *</label>
             <select v-model="form.type">
-              <option value="MENU">菜单</option>
-              <option value="BUTTON">按钮</option>
+              <option value="directory">目录</option>
+              <option value="menu">菜单</option>
+              <option value="button">按钮</option>
             </select>
           </div>
           
           <div class="form-item">
             <label>父级菜单</label>
             <select v-model="form.parentId">
-              <option :value="null">顶级菜单</option>
-              <option v-for="menu in menuOptions" :key="menu.id" :value="menu.id" :disabled="menu.children && menu.children.length > 0">
+              <option :value="0">顶级菜单</option>
+              <option v-for="menu in menuOptions" :key="menu.id" :value="menu.id">
                 {{ menu.name }}
               </option>
             </select>
           </div>
-          
+
           <div class="form-item">
             <label>菜单路径</label>
             <input v-model="form.path" type="text" placeholder="如：/system/user" />
           </div>
-          
+
+          <div class="form-item">
+            <label>组件</label>
+            <input v-model="form.component" type="text" placeholder="如：UserManagement" />
+          </div>
+
+          <div class="form-item">
+            <label>权限标识</label>
+            <input v-model="form.perms" type="text" placeholder="如：system:user:view" />
+          </div>
+
           <div class="form-item">
             <label>图标</label>
             <input v-model="form.icon" type="text" placeholder="如：user" />
           </div>
-          
+
           <div class="form-item">
             <label>排序</label>
-            <input v-model="form.sortOrder" type="number" placeholder="数字越小越靠前" />
+            <input v-model="form.orderNum" type="number" placeholder="数字越小越靠前" />
+          </div>
+
+          <div class="form-item">
+            <label>状态</label>
+            <select v-model="form.status">
+              <option value="1">正常</option>
+              <option value="0">停用</option>
+            </select>
           </div>
         </div>
-        
+
         <div class="modal-footer">
           <button class="btn-secondary" @click="showModal = false">取消</button>
-          <button class="btn-primary" @click="handleSubmit" :disabled="!form.name || !form.code">
+          <button class="btn-primary" @click="handleSubmit" :disabled="!form.name">
             {{ editingMenu ? '保存' : '创建' }}
           </button>
         </div>

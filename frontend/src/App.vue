@@ -1,9 +1,13 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useMenuStore } from './stores/menu'
 import Sidebar from './components/Sidebar.vue'
 import Navbar from './components/Navbar.vue'
+import UserManagement from './components/UserManagement.vue'
+import RoleManagement from './components/RoleManagement.vue'
+import MenuManagement from './components/MenuManagement.vue'
+import PermissionManagement from './components/PermissionManagement.vue'
 
 const authStore = useAuthStore()
 const menuStore = useMenuStore()
@@ -17,6 +21,7 @@ const loginForm = ref({
 
 async function handleLogin() {
   await authStore.login(loginForm.value.username, loginForm.value.password)
+  await menuStore.loadMenus()
 }
 
 function handleNavigate({ path, menu }) {
@@ -25,7 +30,7 @@ function handleNavigate({ path, menu }) {
 
 onMounted(() => {
   authStore.loadUser()
-  menuStore.setMenus()
+  menuStore.loadMenus()
 })
 </script>
 

@@ -21,7 +21,8 @@ public class MenuController {
     @GetMapping
     @RequirePermission({"system:menu:view"})
     public List<Map<String, Object>> listMenus() {
-        return rbacService.getMenuTree().stream()
+        return rbacService.getAllMenus().stream()
+            .sorted(Comparator.comparing(Menu::getOrderNum))
             .map(this::convertMenuToMap)
             .toList();
     }
@@ -45,7 +46,7 @@ public class MenuController {
     }
 
     @PostMapping
-    @RequirePermission({"system:menu:edit"})
+    @RequirePermission({"system:menu:create"})
     public Map<String, Object> createMenu(@RequestBody Map<String, Object> body) {
         String name = (String) body.get("name");
         String path = (String) body.get("path");
@@ -90,7 +91,7 @@ public class MenuController {
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission({"system:menu:edit"})
+    @RequirePermission({"system:menu:delete"})
     public Map<String, Object> deleteMenu(@PathVariable Long id) {
         Menu menu = rbacService.getMenuById(id);
         if (menu == null) {

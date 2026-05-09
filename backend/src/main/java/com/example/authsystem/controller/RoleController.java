@@ -3,6 +3,7 @@ package com.example.authsystem.controller;
 import com.example.authsystem.annotation.RequirePermission;
 import com.example.authsystem.entity.Permission;
 import com.example.authsystem.entity.Role;
+import com.example.authsystem.entity.Menu;
 import com.example.authsystem.service.RbacService;
 import java.time.Instant;
 import java.util.*;
@@ -39,7 +40,7 @@ public class RoleController {
     }
 
     @PostMapping
-    @RequirePermission({"system:role:edit"})
+    @RequirePermission({"system:role:create"})
     public Map<String, Object> createRole(@RequestBody Map<String, String> body) {
         String code = body.get("code");
         String name = body.get("name");
@@ -77,7 +78,7 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission({"system:role:edit"})
+    @RequirePermission({"system:role:delete"})
     public Map<String, Object> deleteRole(@PathVariable Long id) {
         Role role = rbacService.getRoleById(id);
         if (role == null) {
@@ -123,6 +124,37 @@ public class RoleController {
         return result;
     }
 
+    @GetMapping("/{id}/menus")
+    @RequirePermission({"system:role:view"})
+    public List<Map<String, Object>> getRoleMenus(@PathVariable Long id) {
+        Role role = rbacService.getRoleById(id);
+        if (role == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "角色不存在");
+        }
+        return rbacService.getRoleMenusFlat(role).stream()
+            .map(this::convertMenuToMap)
+            .toList();
+    }
+
+    @PostMapping("/{id}/menus")
+    @RequirePermission({"system:role:assign"})
+    public Map<String, Object> assignRoleMenus(@PathVariable Long id, @RequestBody List<Long> menuIds) {
+        Role role = rbacService.getRoleById(id);
+        if (role == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "角色不存在");
+        }
+
+        List<Menu> menus = menuIds.stream()
+            .map(rbacService::getMenuById)
+            .filter(Objects::nonNull)
+            .toList();
+
+        rbacService.assignMenus(role, menus);
+        Map<String, Object> result = new HashMap<>();
+        result.put("message", "菜单分配成功");
+        return result;
+    }
+
     private Map<String, Object> convertRoleToMap(Role role) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", role.getId());
@@ -145,6 +177,21 @@ public class RoleController {
         map.put("name", perm.getName());
         map.put("type", perm.getType());
         map.put("description", perm.getDescription());
+        return map;
+    }
+
+    private Map<String, Object> convertMenuToMap(Menu menu) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", menu.getId());
+        map.put("name", menu.getName());
+        map.put("path", menu.getPath());
+        map.put("component", menu.getComponent());
+        map.put("parentId", menu.getParentId());
+        map.put("type", menu.getType());
+        map.put("perms", menu.getPerms());
+        map.put("icon", menu.getIcon());
+        map.put("orderNum", menu.getOrderNum());
+        map.put("status", menu.getStatus());
         return map;
     }
 }

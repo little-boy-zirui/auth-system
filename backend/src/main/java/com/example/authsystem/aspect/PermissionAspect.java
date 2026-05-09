@@ -65,6 +65,9 @@ public class PermissionAspect {
             return null;
         }
         HttpServletRequest request = attributes.getRequest();
+        if (request.getSession(false) == null) {
+            return null;
+        }
         Object sessionUser = request.getSession(false).getAttribute("SESSION_AUTH_USER");
         if (sessionUser instanceof SessionUser) {
             return (SessionUser) sessionUser;

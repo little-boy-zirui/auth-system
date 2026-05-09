@@ -38,11 +38,18 @@ public class RbacService {
         Permission editUser = createPermission("system:user:edit", "编辑用户", "button", null);
         Permission deleteUser = createPermission("system:user:delete", "删除用户", "button", null);
         Permission viewRole = createPermission("system:role:view", "查看角色", "menu", null);
+        Permission createRole = createPermission("system:role:create", "创建角色", "button", null);
         Permission editRole = createPermission("system:role:edit", "编辑角色", "button", null);
+        Permission deleteRole = createPermission("system:role:delete", "删除角色", "button", null);
         Permission assignRole = createPermission("system:role:assign", "分配权限", "button", null);
         Permission viewMenu = createPermission("system:menu:view", "查看菜单", "menu", null);
+        Permission createMenu = createPermission("system:menu:create", "创建菜单", "button", null);
         Permission editMenu = createPermission("system:menu:edit", "编辑菜单", "button", null);
+        Permission deleteMenu = createPermission("system:menu:delete", "删除菜单", "button", null);
         Permission viewPermission = createPermission("system:permission:view", "查看权限", "menu", null);
+        Permission createPermission = createPermission("system:permission:create", "创建权限", "button", null);
+        Permission editPermission = createPermission("system:permission:edit", "编辑权限", "button", null);
+        Permission deletePermission = createPermission("system:permission:delete", "删除权限", "button", null);
 
         Menu dashboard = createMenu("首页", "/dashboard", "Dashboard", 0L, "directory", null, "🏠", 1);
         Menu system = createMenu("系统管理", "/system", null, 0L, "directory", null, "⚙️", 2);
@@ -52,11 +59,19 @@ public class RbacService {
         Menu permissionMenu = createMenu("权限配置", "/system/permission", "PermissionManagement", system.getId(), "menu", "system:permission:view", "🔐", 4);
 
         Role admin = createRole("ADMIN", "系统管理员", "拥有所有权限");
-        assignPermissions(admin, Arrays.asList(viewUser, createUser, editUser, deleteUser, viewRole, editRole, assignRole, viewMenu, editMenu, viewPermission));
+        assignPermissions(admin, Arrays.asList(
+            viewUser, createUser, editUser, deleteUser,
+            viewRole, createRole, editRole, deleteRole, assignRole,
+            viewMenu, createMenu, editMenu, deleteMenu,
+            viewPermission, createPermission, editPermission, deletePermission));
         assignMenus(admin, Arrays.asList(dashboard, system, userMenu, roleMenu, menuMenu, permissionMenu));
 
         Role editor = createRole("USER", "普通用户", "可以编辑但不能删除");
-        assignPermissions(editor, Arrays.asList(viewUser, createUser, editUser, viewRole, viewMenu, viewPermission));
+        assignPermissions(editor, Arrays.asList(
+            viewUser, createUser, editUser,
+            viewRole, createRole, editRole, assignRole,
+            viewMenu, createMenu, editMenu,
+            viewPermission, createPermission, editPermission));
         assignMenus(editor, Arrays.asList(dashboard, system, userMenu, roleMenu, menuMenu, permissionMenu));
 
         Role viewer = createRole("VIEWER", "访客", "只能查看");
@@ -223,6 +238,7 @@ public class RbacService {
 
     public void deletePermission(Long id) {
         permissions.remove(id);
+        rolePermissions.values().forEach(permissionIds -> permissionIds.remove(id));
     }
 
     public Menu createMenu(String name, String path, String component, Long parentId, String type, String perms, String icon, Integer orderNum) {
@@ -272,7 +288,19 @@ public class RbacService {
     }
 
     public void deleteMenu(Long id) {
+        List<Long> childIds = menus.values().stream()
+            .filter(menu -> Objects.equals(menu.getParentId(), id))
+            .map(Menu::getId)
+            .toList();
+        childIds.forEach(this::deleteMenu);
         menus.remove(id);
+        roleMenus.values().forEach(menuIds -> menuIds.remove(id));
+    }
+
+    public List<Menu> getRoleMenusFlat(Role role) {
+        return getRoleMenus(role).stream()
+            .sorted(Comparator.comparing(Menu::getOrderNum))
+            .toList();
     }
 
     public List<String> getPermissionsForRoles(List<Role> userRoles) {

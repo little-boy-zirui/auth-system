@@ -12,12 +12,15 @@ const editingPermission = ref(null)
 const form = ref({
   name: '',
   code: '',
-  type: 'BUTTON',
-  resourceId: null,
+  type: 'button',
+  path: '',
+  method: '',
+  parentId: null,
+  orderNum: 1,
+  icon: '',
+  status: '1',
   description: ''
 })
-
-const resourceOptions = ref([])
 
 async function loadPermissions() {
   loading.value = true
@@ -27,17 +30,6 @@ async function loadPermissions() {
     })
     if (response.ok) {
       permissions.value = await response.json()
-      // 从现有权限中提取资源选项
-      const resources = new Map()
-      permissions.value.forEach(perm => {
-        if (perm.resourceName) {
-          resources.set(perm.resourceId, perm.resourceName)
-        }
-      })
-      resourceOptions.value = [
-        { id: null, name: '不关联资源' },
-        ...Array.from(resources.entries()).map(([id, name]) => ({ id, name }))
-      ]
     }
   } catch (error) {
     console.error('加载权限失败:', error)
@@ -51,8 +43,13 @@ function handleAdd() {
   form.value = {
     name: '',
     code: '',
-    type: 'BUTTON',
-    resourceId: null,
+    type: 'button',
+    path: '',
+    method: '',
+    parentId: null,
+    orderNum: 1,
+    icon: '',
+    status: '1',
     description: ''
   }
   showModal.value = true
@@ -60,7 +57,18 @@ function handleAdd() {
 
 function handleEdit(permission) {
   editingPermission.value = permission
-  form.value = { ...permission }
+  form.value = {
+    name: permission.name || '',
+    code: permission.code || '',
+    type: permission.type || 'button',
+    path: permission.path || '',
+    method: permission.method || '',
+    parentId: permission.parentId ?? null,
+    orderNum: permission.orderNum ?? 1,
+    icon: permission.icon || '',
+    status: permission.status || '1',
+    description: permission.description || ''
+  }
   showModal.value = true
 }
 
@@ -119,7 +127,7 @@ onMounted(() => {
   <div class="management-page">
     <div class="page-header">
       <h2>权限管理</h2>
-      <button class="btn-primary" @click="handleAdd">新增权限</button>
+      <button v-permission="'system:permission:create'" class="btn-primary" @click="handleAdd">新增权限</button>
     </div>
     
     <div class="table-container">
@@ -129,8 +137,10 @@ onMounted(() => {
             <th>权限名称</th>
             <th>权限编码</th>
             <th>类型</th>
-            <th>关联资源</th>
+            <th>接口路径</th>
+            <th>请求方法</th>
             <th>描述</th>
+            <th>状态</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -143,11 +153,13 @@ onMounted(() => {
                 {{ permission.type }}
               </span>
             </td>
-            <td>{{ permission.resourceName || '-' }}</td>
+            <td><code>{{ permission.path || '-' }}</code></td>
+            <td>{{ permission.method || '-' }}</td>
             <td>{{ permission.description || '-' }}</td>
+            <td>{{ permission.status === '1' ? '正常' : '停用' }}</td>
             <td class="actions">
-              <button class="btn-text" @click="handleEdit(permission)">编辑</button>
-              <button class="btn-text btn-danger" @click="handleDelete(permission)">删除</button>
+              <button v-permission="'system:permission:edit'" class="btn-text" @click="handleEdit(permission)">编辑</button>
+              <button v-permission="'system:permission:delete'" class="btn-text btn-danger" @click="handleDelete(permission)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -180,23 +192,41 @@ onMounted(() => {
           <div class="form-item">
             <label>权限类型 *</label>
             <select v-model="form.type">
-              <option value="BUTTON">按钮</option>
-              <option value="API">API</option>
-              <option value="DATA">数据</option>
+              <option value="menu">菜单</option>
+              <option value="button">按钮</option>
+              <option value="api">API</option>
+              <option value="data">数据</option>
             </select>
           </div>
-          
+
           <div class="form-item">
-            <label>关联资源</label>
-            <select v-model="form.resourceId">
-              <option :value="null">不关联资源</option>
-              <option v-for="resource in resourceOptions" :key="resource.id" :value="resource.id">
-                {{ resource.name }}
-              </option>
-            </select>
-            <small class="help-text">可选，关联菜单或其他资源</small>
+            <label>接口路径</label>
+            <input v-model="form.path" type="text" placeholder="如：/api/system/users" />
           </div>
-          
+
+          <div class="form-item">
+            <label>请求方法</label>
+            <input v-model="form.method" type="text" placeholder="如：GET / POST" />
+          </div>
+
+          <div class="form-item">
+            <label>图标</label>
+            <input v-model="form.icon" type="text" placeholder="可选" />
+          </div>
+
+          <div class="form-item">
+            <label>排序</label>
+            <input v-model="form.orderNum" type="number" placeholder="数字越小越靠前" />
+          </div>
+
+          <div class="form-item">
+            <label>状态</label>
+            <select v-model="form.status">
+              <option value="1">正常</option>
+              <option value="0">停用</option>
+            </select>
+          </div>
+
           <div class="form-item">
             <label>描述</label>
             <textarea 
