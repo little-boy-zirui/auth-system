@@ -5,17 +5,17 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const loading = ref(false)
   const error = ref('')
+  const permissions = ref([])
+  const roles = ref([])
 
   const isAuthenticated = computed(() => user.value?.authenticated)
-  const roles = computed(() => user.value?.roles || [])
-  const permissions = computed(() => user.value?.permissions || [])
 
   function hasPermission(permissionCode) {
     if (!user.value?.authenticated) {
       return false
     }
     const userPermissions = user.value.permissions || []
-    return userPermissions.includes(permissionCode)
+    return userPermissions.includes(permissionCode) || userPermissions.includes('*:*:*')
   }
 
   function hasRole(roleCode) {
@@ -34,6 +34,12 @@ export const useAuthStore = defineStore('auth', () => {
         credentials: 'include'
       })
       user.value = await response.json()
+      if (user.value?.permissions) {
+        permissions.value = user.value.permissions
+      }
+      if (user.value?.roles) {
+        roles.value = user.value.roles
+      }
     } catch (e) {
       error.value = e.message
     } finally {
@@ -58,6 +64,12 @@ export const useAuthStore = defineStore('auth', () => {
       }
       
       user.value = await response.json()
+      if (user.value?.permissions) {
+        permissions.value = user.value.permissions
+      }
+      if (user.value?.roles) {
+        roles.value = user.value.roles
+      }
       return user.value
     } catch (e) {
       error.value = e.message
@@ -76,6 +88,8 @@ export const useAuthStore = defineStore('auth', () => {
         credentials: 'include'
       })
       user.value = null
+      permissions.value = []
+      roles.value = []
     } catch (e) {
       error.value = e.message
     } finally {
@@ -87,9 +101,9 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     loading,
     error,
-    isAuthenticated,
-    roles,
     permissions,
+    roles,
+    isAuthenticated,
     hasPermission,
     hasRole,
     loadUser,

@@ -1,5 +1,4 @@
-import { computed } from 'vue'
-import { useAuthStore } from './auth'
+import { useAuthStore } from '../stores/auth'
 
 export function createPermissionDirective() {
   return {
